@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+build_simc/
+*.dylib
+*.so
+# never commit Elektron code: sections, snapshots, built images
+*.syx
+*.bin
+*.snap
+*.snap.gz
+*.dis

@@ -1,0 +1,74 @@
+diff --git a/emu/harness.py b/emu/harness.py
+index 5e70969..3e4de17 100644
+--- a/emu/harness.py
++++ b/emu/harness.py
+@@ -299,6 +299,14 @@ class Machine:
+                 self.movec_count += 1
+             return h
+ 
++        def make_rev(reg, byte):                      # ISA_C BITREV / BYTEREV Dn
++            def h(uc, addr, size, data):
++                v = uc.reg_read(reg) & 0xFFFFFFFF
++                out = int.from_bytes(v.to_bytes(4, 'big'), 'little') if byte else int('{:032b}'.format(v)[::-1], 2)
++                uc.reg_write(reg, out)
++                uc.reg_write(UC_M68K_REG_PC, addr + 2)
++            return h
++
+         n_ff1 = n_movec = 0
+         for off in range(0, len(image) - 1, 2):
+             w = image[off] << 8 | image[off + 1]
+@@ -317,6 +325,13 @@ class Machine:
+         """Emulate the ColdFire instructions Unicorn lacks."""
+         def on_code(uc, addr, size, data):
+             w = struct.unpack('>H', uc.mem_read(addr, 2))[0]
++            if 0x00C0 <= w <= 0x00C7 or 0x02C0 <= w <= 0x02C7:     # BITREV / BYTEREV Dn
++                reg = UC_M68K_REG_D0 + (w & 7)
++                v = uc.reg_read(reg) & 0xFFFFFFFF
++                out = int.from_bytes(v.to_bytes(4, 'big'), 'little') if w >= 0x02C0 else int('{:032b}'.format(v)[::-1], 2)
++                uc.reg_write(reg, out)
++                uc.reg_write(UC_M68K_REG_PC, addr + 2)
++                return
+             if 0x04C0 <= w <= 0x04C7:                 # FF1.L Dn
+                 n = w & 7
+                 reg = UC_M68K_REG_D0 + n
+@@ -352,6 +367,18 @@ class Machine:
+                 uc.reg_write(UC_M68K_REG_PC, pc)
+                 uc.reg_write(UC_M68K_REG_A7, sp + 8)
+                 return
++            if vec == 4:                               # illegal instruction: ISA_C BITREV / BYTEREV Dn
++                pc = uc.reg_read(UC_M68K_REG_PC)
++                w = struct.unpack('>H', uc.mem_read(pc, 2))[0]
++                if 0x00C0 <= w <= 0x00C7 or 0x02C0 <= w <= 0x02C7:
++                    reg = UC_M68K_REG_D0 + (w & 7)
++                    v = uc.reg_read(reg) & 0xFFFFFFFF
++                    out = (int.from_bytes(v.to_bytes(4, 'big'), 'little') if w >= 0x02C0
++                           else int('{:032b}'.format(v)[::-1], 2))
++                    uc.reg_write(reg, out)
++                    uc.reg_write(UC_M68K_REG_PC, pc + 2)
++                    self.rev_count = getattr(self, 'rev_count', 0) + 1
++                    return
+             # A synchronous `trap #N` must resume *after* the trap, so let
+             # raise_vector advance the pushed PC past it. Asynchronous
+             # injections (the timer tick) keep the interrupted PC.
+diff --git a/tools/framelink.py b/tools/framelink.py
+index d429bf3..3792103 100644
+--- a/tools/framelink.py
++++ b/tools/framelink.py
+@@ -32,6 +32,17 @@ TABLES = (
+ VARIABLES = ('counter', 'gate', 'countdown', 'mode', 'stop')
+ 
+ PROFILES = {
++    # Digitone II 1.11: handler 0x40025e36 sends the previous frame
++    # (0xa80 @ 0x80005e60, rx 0xabc @ 0x800053a4) via 0x400cf7be unless the pacing counter 0x402876f8 is
++    # non-zero; the frame build tests the gate 0x4058e54c at 0x40026158; 0x40025dda checks VBR+0x2fc == handler.
++    # mode/countdown/stop by analogy with the DT2 layout (0x4058e550 is written with the gate by 0x40025dee;
++    # 0x4058e544 non-zero sets gate+mode inside the handler) -- not otherwise verified.
++    '57b06a7960b7c3dc9803bde6b31896b89a2fbdcc404a932ff503f3856d4d7a61': {
++        'name': 'Digitone II 1.11', 'vector': 191,
++        'handler': 0x40025e36, 'driver': 0x400cf7be, 'counter': 0x402876f8,
++        'gate': 0x4058e54c, 'countdown': 0x4058e548, 'mode': 0x4058e550,
++        'stop': 0x4058e544, 'stop_writer': None, 'tables': (),
++    },
+     '6a6a887b0573a557b71badf32cd9392777c60b4d1f33dfae12bb8346a014a37b': {
+         'name': 'Digitakt II 1.15C', 'vector': 191,
+         'handler': 0x4002d652, 'driver': 0x400cf9c4, 'counter': 0x4028ac90,
