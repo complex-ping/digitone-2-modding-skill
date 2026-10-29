@@ -17,7 +17,7 @@ two worked examples that pass their emulator tests.
 ## Install
 
 ```bash
-npx skills add julian-kominiak/digitone-2-modding-skill
+npx skills add complex-ping/digitone-2-modding-skill
 ```
 
 Then ask your agent to set up the workspace (`scripts/dn2setup.py`). It checks every dependency and tells you what is
@@ -37,6 +37,11 @@ Details: [`skills/digitone-2-modding-skill/references/setup.md`](skills/digitone
 - [`track_trim`](skills/digitone-2-modding-skill/examples/track_trim): a SHARC DSP mod. Track 1 is 6 dB down in the
   main mix, from a new L2 code block, a CALL hook and an fxdsl kernel; checked by an A/B render against stock (ratio
   0.5000, track 2 unchanged).
+
+## Made with this skill
+[**Overtone**](https://github.com/complex-ping/overtone): custom firmware for the Digitone II (OS 1.12) with per-track
+insert effects, the THRU, SOPHIE, LOOP and MACHINEDRUM machines, envelope followers, two arpeggiators, parameter slides
+and GROOVE. Ready to install: its patcher makes the build from Elektron's own OS file.
 
 ## Disclaimer
 Unofficial and not affiliated with or endorsed by Elektron. Elektron and Digitone are trademarks of Elektron Music
