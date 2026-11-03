@@ -7,6 +7,7 @@ for the Elektron Digitone II** (OS 1.11):
 - add SHARC DSP audio code (effects, per-track processing, new machines);
 - verify both in two emulators: the real OS on [digikit](https://github.com/m-dwyer/digikit), and a whole-DSP SHARC
   emulator included here;
+- read stock code through a firmware atlas: functions, callers, C++ classes and vtables recovered from your own image;
 - rebuild, re-sign and flash the `.syx` over USB.
 
 It packs the reverse-engineering notes (stock addresses, hook sites, the ColdFire → DSP frame, free memory), the hardware
@@ -31,6 +32,16 @@ missing.
 
 Details: [`skills/digitone-2-modding-skill/references/setup.md`](skills/digitone-2-modding-skill/references/setup.md).
 
+## Reading the firmware
+`scripts/cfatlas.py` turns your copy of the OS into a queryable database in seconds. The ColdFire OS kept its C++ RTTI, so classes,
+vtables and many method names come back from the image itself:
+
+```bash
+python3 scripts/cfatlas.py build
+python3 scripts/cfatlas.py class '^PatternGridView$'
+python3 scripts/cfatlas.py fn 0x40063F56
+```
+
 ## Examples
 - [`double_time`](skills/digitone-2-modding-skill/examples/double_time): a ColdFire C hook. The sequencer clock runs at
   2x; checked in the ColdFire emulator (4 → 8 sixteenths in 300 blocks).
@@ -47,5 +58,7 @@ and GROOVE. Ready to install: its patcher makes the build from Elektron's own OS
 Unofficial and not affiliated with or endorsed by Elektron. Elektron and Digitone are trademarks of Elektron Music
 Machines. Flashing modified firmware is at your own risk. A unit can always be recovered by reflashing the stock OS over
 DIN MIDI (hold [FUNC] at power-on, [TRIG 4]). Do not redistribute Elektron's firmware or modified images of it.
+
+Checks without any firmware: `python tests/skill_check.py`, `python -m unittest discover -s tests -p 'test_*.py'` (also in CI).
 
 Licenses: MIT, except the digikit-derived files (GPL-2.0); see [THIRD-PARTY.md](THIRD-PARTY.md).
