@@ -37,6 +37,7 @@ reflash stock (references/setup.md "Recovery").
 | `cfmod.py` | ColdFire mod builder: C / asm → linked at 0x46800000, dnfw loader, stock-checked hook sites, signed .syx, flash-size check |
 | `dspblocks.py` | add L2 / DDR blocks to the SHARC boot stream, CALL hooks, 32-byte line padding |
 | `fxdsl.py`, `sasm.py`, `sisa.py` | DSP kernels in Python (code + bit-exact model) / a verifying mini assembler / 48-bit packer |
+| `cfatlas.py` | **start here for stock ColdFire code:** database of functions, callers, C++ classes, vtable slots and strings recovered from your image; records your findings |
 | `visa.py`, `cfdis.sh`, `cfx.sh` | SHARC disassembler; ColdFire disassembly, xrefs, functions |
 | `deadscan.py` | unreferenced SHARC functions (caves) |
 | `hwrules.py`, `shapecheck.py`, `encodecheck.py`, `bootblocks.py` | the static hardware-rule checks the emulator cannot do |
@@ -54,3 +55,4 @@ reflash stock (references/setup.md "Recovery").
 - **The unit pays for memory, not instructions**; the ColdFire's audio ISR budget is small (late frames = silent trigs).
 - **Image ≤ 2 MiB as received** (`cfmod.flash_check`); section 7 < 1 MiB.
 - After 2 failed flashes on one problem, stop and restate what is proven.
+- **Compare an anomaly against the previous build** before chasing it, and bisect with build variants early.

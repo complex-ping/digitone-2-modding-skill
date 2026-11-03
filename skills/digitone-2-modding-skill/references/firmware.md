@@ -54,3 +54,17 @@ recomputes all of it (`dnfw build`, or its API as cfmod does). `dnfw extract` re
 The DSP renders 16 VOICES; the ColdFire allocates them per note and copies the track's sound into the voice record.
 Unison takes several voices for one note. The note path, the lock applier, the LFO evaluator and the per-voice mirror
 blocks are all per VOICE: map voice → track (`0x8000dda0[voice]`, frame +0xa5a) everywhere. The #1 bug source.
+
+## The OS names itself: C++ RTTI [verified on 1.11 and 1.12]
+The ColdFire OS is C++ built with GCC and kept its typeinfo, so most classes can be read back from your own image (`scripts/cfatlas.py`).
+On 1.12: 12,350 functions, 1,624 types (752 classes, 872 lambdas), 741 with vtables; about a third of all instructions sit in a function RTTI names.
+- Typeinfo `{vptr, name, [base]}`, vtable `{offset, typeinfo, slot...}`. Slot N is `vtable + 4N`: the LFO page's title at `vt + 76` is slot 19 of `LfoPageView`, inherited from `ParameterPageView`.
+- A function that loads a vtable is a constructor or destructor.
+- A `std::function` lambda's typeinfo names its enclosing method with the signature (`ProjectManager::interactiveLoad(int, std::function<...>, bool, bool)`): the manager references the typeinfo, the method references the manager.
+- The DSP has no application RTTI; this shortcut is ColdFire only.
+Static scans lie in known ways: byte searches miss PC-relative calls, `moveq` + `movel` hides stores from an immediate scan, objdump prints `movel #` pointers in decimal, and a linear sweep decodes tables as junk. digikit's `tools/` adds `rttiscan.py`, `refscan.py`, `ghidraq.py` and `ghidradump.py` for heavier questions.
+
+## Later OS versions [verified on 1.12]
+Scripts and addresses here target 1.11. From 1.11 to 1.12, sections 2 / 4 / 7 / 8 are byte-identical (the DSP did not change) and section 3 is relinked (+4 KB, BSS +0x1000, DMA alias +0x8000).
+[Overtone](https://github.com/complex-ping/overtone) ships on 1.12 by building on 1.11 and translating every patched address: anchors of 10 matching instructions (literals masked) between the two disassemblies give a code map, voted operands a data map. Data tables need the data map, not the code map, and GCC encodes some constants shorter in the relink, so relink by symbol rather than patching bytes.
+

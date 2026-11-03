@@ -2,7 +2,7 @@
 
 ## The loop
 1. **Spec first.** Ask the questions below in one round before building. A wrong guess costs a whole build + flash.
-2. **Find it in stock.** `cfx.sh` / `visa.py`, the manual for the gesture, dnfw's notes and `dn2_111.h`. Read the routine
+2. **Find it in stock.** `cfatlas.py class` / `fn` / `str` first, then `cfx.sh` / `visa.py`, the manual for the gesture, dnfw's notes and `dn2_111.h`. Read the routine
    you hook end to end; note every register and flag the code after your site reads.
 3. **Write the test first**, in the emulator, with a **stock control in the same run** (a stock knob / key doing the same
    gesture: proves the gesture really happened). For a bug: reproduce it as a failing test on the faulty build, then fix,
@@ -32,6 +32,13 @@
 - **A laggy UI is the ColdFire's audio ISR:** keep per-block work small, skip what nothing uses, defer per-note work.
 - **Check upstream first** (dnfw `git pull`): its notes may already have your plumbing.
 - **Never overwrite your stock image**; downloads of third-party code: know where it came from.
+
+## Pitfalls that cost hours
+- **Derive before probing:** read your builder and the existing test first; probe only what the code does not answer.
+- **Red herrings:** run an anomaly against the previous build before chasing it. It is often old behaviour.
+- **Bisect with build variants early**, including a variant whose hook is semantically identical: a one-word change in timing or layout can be the cause.
+- **Record what you learn** with `cfatlas.py name`, so no session derives it twice.
+- **Keep comments short in build tables:** long comment lines get truncated by tools and eat an agent's context. History belongs in a log.
 
 ## A silent unit (UI works, no sound from power-on)
 The DSP never ran a block. Compare the builds for what the emulator cannot model first — block lengths / alignment

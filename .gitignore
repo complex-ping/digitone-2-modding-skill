@@ -9,3 +9,5 @@ build_simc/
 *.snap
 *.snap.gz
 *.dis
+*.sqlite
+atlas/

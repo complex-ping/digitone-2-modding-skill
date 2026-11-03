@@ -55,6 +55,10 @@
   every offset.
 - A mid-run snapshot must save digikit's checkpoint components AND timers (else a frozen screen).
 
+## Tests that do not flake
+- Key events land late: poll for the state (`for _ in range(N): h.frames(8); if cond: break`), never a fixed wait; a layout shift changes the timing.
+- Read text buffers from emulator RAM with 24+ bytes: 16 cuts long headers.
+
 ## Measuring on the unit (when HW and emulator disagree)
 - The Screenshot RPC (`dn2rpc.c shot`, macOS CoreMIDI) returns the unit's live frame buffer: a mod can publish a debug page
   there (draw a 1 KB block of counters into the buffer the RPC reads, tagged, and read it over USB) — the way to read live
