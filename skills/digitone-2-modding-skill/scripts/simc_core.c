@@ -535,7 +535,7 @@ static void mul(Sim *s, PE *pe, int op, int n, int x, int y) {
         i128 xv = xs ? S32(R[x]) : (i64)R[x];
         i128 yv = ys ? S32(R[y]) : (i64)R[y];
         i128 p = xv * yv;
-        if (frac) p <<= 1;
+        if (frac && xs && ys) p <<= 1;                  /* PRM: only signed x signed fractional drops the redundant sign bit */
         i128 *acc = (dst == 1 || dst == 3) ? &pe->MRB : &pe->MRF;
         i128 res = hi == 1 ? p : hi == 2 ? *acc + p : *acc - p;
         res = s80(res);

@@ -42,6 +42,8 @@ python3 scripts/cfatlas.py class '^PatternGridView$'
 python3 scripts/cfatlas.py fn 0x40063F56
 ```
 
+`scripts/sharcatlas.py` does the same for the DSP, without RTTI: functions, callers, and a compact way to read and record them. `references/sharc.md` maps the code: machines, filters, FX, RTOS, drivers. `scripts/sharc_checks.py` runs stock routines in the emulator and compares the results.
+
 ## Examples
 - [`double_time`](skills/digitone-2-modding-skill/examples/double_time): a ColdFire C hook. The sequencer clock runs at
   2x; checked in the ColdFire emulator (4 → 8 sixteenths in 300 blocks).

@@ -38,6 +38,7 @@ reflash stock (references/setup.md "Recovery").
 | `dspblocks.py` | add L2 / DDR blocks to the SHARC boot stream, CALL hooks, 32-byte line padding |
 | `fxdsl.py`, `sasm.py`, `sisa.py` | DSP kernels in Python (code + bit-exact model) / a verifying mini assembler / 48-bit packer |
 | `cfatlas.py` | **start here for stock ColdFire code:** database of functions, callers, C++ classes, vtable slots and strings recovered from your image; records your findings |
+| `sharcatlas.py`, `sharc_checks.py` | **start here for stock DSP code:** database of SHARC functions and callers, compact reading, your findings; run stock routines in the emulator and compare (`references/sharc.md` "Map of the code" is the overview) |
 | `visa.py`, `cfdis.sh`, `cfx.sh` | SHARC disassembler; ColdFire disassembly, xrefs, functions |
 | `deadscan.py` | unreferenced SHARC functions (caves) |
 | `hwrules.py`, `shapecheck.py`, `encodecheck.py`, `bootblocks.py` | the static hardware-rule checks the emulator cannot do |

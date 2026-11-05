@@ -19,6 +19,9 @@
   interrupts, DMA, the branch predictor, ECC / boot-ROM loading, power-on memory contents, anything the PRM forbids that an
   interpreter executes "correctly" (hence the static checks). Instruction counts under-predict the unit's load.
 
+- **Known limits:** floats are 32 bit, so code that clears RND32 and divides in 40 bits (`udiv32`) rounds quotients above 2^24. No peripherals, so drivers do not run.
+- **Checking it against stock:** `sharc_checks.py` calls stock routines in the emulator and compares results. That is how a real emulator bug surfaced: every fractional multiply was shifted left, while the PRM shifts only signed x signed. A failing check can be the name, the test or the emulator; find out which before changing any of them.
+
 ## ColdFire (the real OS) — digikit + `fastemu.py` + `cfkit.py`
 - digikit runs the MAIN OS in Unicorn with HLEs (flash, SD, panel, screen). `fastemu`: a native block stepper (10–30 M
   instr / s), native idle skip / ISR return / pixel HLE; `cold_boot` + `to_screen` boot an image to the main screen (~1 min

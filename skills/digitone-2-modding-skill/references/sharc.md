@@ -9,8 +9,25 @@
   `MODIFY(I7, n)`); 14d = 0x1a/0x1b. Access sizes (l, x, w) differ per type — `visa.access_size()`; `(0,0,0)` = BYTE.
 - The stock code is ADI C-compiler output: CJUMP / RFRAME frames, `udiv`, callee-saved R3, R5–R7, R9–R11, R13–R15; the C
   runtime keeps M5 = 0, M6 = 1 (and M13 = 0, M14 = 1).
+- `sharcatlas.py`: functions, callers, callees, and `reread` / `confirm` to read a stretch compactly and record it. A name from structure alone is often wrong; read the code, and run it (`sharc_checks.py`) when a mod relies on it.
 - Wrong tools, do not use: digikit's own VISA decoder and the SLEIGH SHARC Ghidra module (wrong tables), the SHARC+ PRM's
   Type 2a/2b figures.
+
+## Map of the code (OS 1.11 and 1.12: section 7 is the same)
+Addresses are short words. FreeRTOS and C library names are the upstream ones; the rest describe what the code does, found by reading it (`sharcatlas.py`).
+[run] marks routines `sharc_checks.py` runs and compares; everything else here is a reading.
+- **Start:** `Dsp_main` 1ca6d9 sets up clocks, SPU, audio state, PCG, the SPI link and codec SPORTs, creates the audio task, then `vTaskStartScheduler` b887ac. `Audio_task` 1c9e76, `Audio_runCommand` 1c9d6b.
+- **Render:** `Render_block` 1c2712, `Render_voices` 1c8ef1, `Mix_fxBus` 1c1738, `Mix_main` 1c1f1e, `Mix_outputs` 1c244d.
+- **Machines:** `FMTone_render` 1c54c7, `FMDrum_render` 1c778b, `Wavetone_render` 1c6d4a, `Swarmer_render` 1c85ad.
+- **Filters (ids 0 MULTIMODE, 1 LOWPASS 4, 2 EQUALIZER, 3 COMB-, 4 LEGACY LP/HP, 5 COMB+; 2 + 4 and 3 + 5 share code):** `MultimodeFilter_block` b82342, `LowpassFilter_block` b80f2e, `EqFilter_block` b81a16, `CombFilter_block` b806f5, `LegacyFilter_block` b81526. Envelope `Adsr_block` b80345.
+- **Wave tables:** ROM s16 at `0x2001e888 + 2 * 0x401 * i`, read through `Wave_bankPtrSine` 1c4b1e, with a byte-equal copy for FM Drum at `0x200779f8`. The band limited tables at `0x2002f0d0..` are not ROM data: `Wave_buildTables` 1c463b makes them at boot by additive synthesis: sine at `0x2002f0d0`, then 48 tables per bank (notes 24 + 2i, harmonics under 23 kHz, cos² window): triangle `0x2002f8d8`, saw `0x20047938`, square `0x2005f998`.
+- **Reverb:** feedback delay network, 8 lines, two 4 x 4 Hadamard matrices, 8 allpass diffusers: `Reverb_init` b83dc1, `Reverb_linesInit` b83cbd, `Reverb_block` b836bc, `Reverb_core` b82d1a, `Reverb_allpassBank` b82a5b.
+- **Delay:** `Delay_init` b848cb, `Delay_block` b8482c, `Delay_writeRing` b83f72, `Delay_readTaps` b8428b, `Delay_saturate` b84099. **Chorus:** `Chorus_init` b84f51, `Chorus_block` b84d5c, `Chorus_core` b84a3b.
+- **Master compressor:** `Comp_init` b85501, `Comp_block` b8541d, `Comp_sidechainFilter` b84fd3, `Comp_gainComputer` b85070, `Comp_gainSmoother` b85111, `Comp_applyGain` b851e5, `Comp_mix` b852d2. **Overdrive:** `Master_overdrive` 1cdc30.
+- **Math [run]:** `cosf` 1c1018, `sinf` 1c10e4, `tanf` 1c125e, `log10f` 1c0b60, `powf` 1c0c76, `expf` 1c11a5, `sqrtf` 1c122e, `floorf` 1c07cc, `float_div` 1c06ba, `udiv32` b8b4dc, `memset` 1c0bde, `memcpy_bytes` 1c0756, `rand` 1c0df6. Some return with RTS instead of the C frame; `sharc_checks.py` shows how to call each. `floorf` is `FIX` with MODE1.TRUNC, which goes toward minus infinity; the `TRUNC` instruction goes toward zero.
+- **RTOS:** FreeRTOS queue, tasks, timers, event groups, stream buffers, heap 4, found by their assert strings. 8 priorities, heap `0x2d08b8..0x2dd0b0`, `Rtos_assert` 1cd978 is configASSERT, `vPortEnterCritical` b8afca, `vPortExitCritical` b8afd7. Port: `xPortStartScheduler` b8b3c8, `pxPortInitialiseStack` b8af28, yield ISR `0xb8a947`, tick ISR `0xb8afe4`, core timer period 1,000,000.
+- **Drivers:** ADI services. PCG `Pcg_open` b8db33 (registers `0x310c9300`, `0x310ca300`), GPIO `Gpio_init` b8cabb, `Gpio_setDirection` b8cb1b, SEC `Sec_init` b8ec2c (`0x31089000`, SCI `0x31089400`, sources `0x31089800 + 8n`), interrupts `Int_install` b8ce24, `Int_uninstall` b8ced5, `Irq_registerHandler` b8b782, DMA `Dma_start` b8e46a, SPU `Spu_open` b8edee, SPI `Spi_open` 1cc753, SPORT `Sport_open` 1ccd08.
+- **Shared with Digitakt II (OS 1.17):** comparing instruction sequences with immediates masked, 388 of 471 functions (data excluded) are at least 80 % present there: RTOS, drivers, FX, filters, envelopes, math, `Audio_task`. The machines, `Render_*`, `Mix_main` and `Mix_outputs` are the Digitone's own. A Digitakt finding on the shared part should carry over; check the constants. Digitakt's image gives few names of its own: a task string, `RPC dispatcher`, and two asserts from `lib\esp5-dsp\dsp-lib\sampler\digitakt_rompler_update.c`.
 
 ## Adding code: where
 - **New blocks in the boot stream** (`dspblocks.py`): code at **L2 0x20090000** (sw 0xBC8000), data at 0x20098000, more up
