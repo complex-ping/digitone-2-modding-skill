@@ -37,7 +37,9 @@
 - **Derive before probing:** read your builder and the existing test first; probe only what the code does not answer.
 - **Red herrings:** run an anomaly against the previous build before chasing it. It is often old behaviour.
 - **Bisect with build variants early**, including a variant whose hook is semantically identical: a one-word change in timing or layout can be the cause.
-- **Record what you learn** with `cfatlas.py name`, so no session derives it twice.
+- **Record what you learn** with `cfatlas.py name` or `sharcatlas.py confirm`, so no session derives it twice.
+- **Reverse on demand:** read what a feature touches, not the whole firmware. A full map has steep diminishing returns, and "100 %" cannot be proved.
+- **Run a name before relying on it:** reading alone swapped sinf and cosf and took floorf for truncf. Add a line to `sharc_checks.py`, or a test with a stock control.
 - **Keep comments short in build tables:** long comment lines get truncated by tools and eat an agent's context. History belongs in a log.
 
 ## A silent unit (UI works, no sound from power-on)

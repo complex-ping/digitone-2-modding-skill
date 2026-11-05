@@ -587,7 +587,7 @@ class Sim:
         x = s32(X) if sx_ else X & M32
         y = s32(Y) if sy_ else Y & M32
         p = x * y
-        if frac: p <<= 1
+        if frac and sx_ and sy_: p <<= 1              # PRM: only signed x signed fractional drops the redundant sign bit
         return self._mr_result(p, frac, rnd)
 
     def _mul(self, pe, op, n, x, y):
@@ -604,7 +604,7 @@ class Sim:
             xv = s32(R[x]) if xs else R[x] & M32
             yv = s32(R[y]) if ys else R[y] & M32
             p = xv * yv
-            if frac: p <<= 1
+            if frac and xs and ys: p <<= 1            # PRM: only signed x signed fractional drops the redundant sign bit
             accname = 'MRB' if dst in (1, 3) else 'MRF'
             acc = getattr(pe, accname)
             if hi == 1: res = p
