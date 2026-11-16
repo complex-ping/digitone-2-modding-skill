@@ -11,8 +11,8 @@ One DSP block = 32 samples at 48 kHz = 1,500 blocks / s; budget ~666,667 cycles 
 
 ## Container, build, sign [verified]
 `.syx` = SysEx (`F0 00 20 3C 15 00 …`, 8-in-7 packing) → 8-byte preamble (length, checksum) → **ELE3** container of
-aPLib-compressed sections: 5 meta, 2 bootstrap (holds the signing key material — never edit), **3 MAIN OS**, 4 updater,
-**7 SHARC**, 8 accessory ARM. Integrity = per-packet checksum + 32-bit content checksum + HMAC-SHA256 trailer: dnfw
+aPLib-compressed sections: 5 meta, 2 bootstrap (holds the signing key material — never edit), **3 MAIN OS**, 4 "updater"
+(a factory board test that can also boot the OS: setup.md "Section 4's in-place loader"), **7 SHARC**, 8 accessory ARM. Integrity = per-packet checksum + 32-bit content checksum + HMAC-SHA256 trailer: dnfw
 recomputes all of it (`dnfw build`, or its API as cfmod does). `dnfw extract` recovers sections to diff against stock.
 
 ## Memory a mod may use [HW-proven]

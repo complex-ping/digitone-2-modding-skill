@@ -26,6 +26,18 @@ Elektron's code.
   padded to 101-byte packets). Over it the upload stalls and the unit keeps its old OS. Stock 1.11 uses ~1.87 MB:
   your mods share ~220 KB. `cfmod.flash_check` measures it (aPLib is nonlinear: measure, never estimate). Big DSP tables:
   store them compressible (delta-coded, byte-planar), zero what nothing reads.
+- **Packer headroom [measured, not HW-proven]:** dnfw's packer parses greedily (1-step lazy). `scripts/optpack.c`
+  (`cc -O2 -o optpack optpack.c`; `optpack RAW OUT [CHAIN]`) does a cost-optimal parse in the same format, window and
+  2,048-byte match cap. On a ~3.3 MB modded MAIN OS it came out 4.6-5.3 % smaller than dnfw at chain 192 (chain 256 / 4096),
+  and on a modded section 7 2.6 % smaller: tens of KB under the 2 MiB buffer. Check every stream with
+  `dnfw.codec.aplib.depack` and `dnfw inspect` (window) before building with it.
+- **Section 4's in-place loader** (1.12; found and run under Unicorn by naturarum/dn2-cfw, `notes/T1.2`): when the power-on
+  panel key read times out, the bootstrap runs section 4 (a factory board test, not an updater). It stages section 3
+  with its 8-byte header at 0x40200000 and depacks in place to 0x40000400, so the stream has to stay ahead of the writer:
+  margin = 2,096,128 + stored - unpacked. Stock 1.12 keeps +31,181 B. A mod that grows the unpacked MAIN OS by more than
+  that, net of stream growth, hangs on this path (a better packer makes it worse). Nothing is written to flash there, and
+  a power cycle with the panel answering boots normally. Measure it with `scripts/inplace_margin.c STORED 8 2096136`, on
+  `dnfw extract --stored --section 3`. The normal path stages at 0x40400000 and has megabytes to spare.
 - **Never change a section's unpacked length by in-place edits**: ColdFire code goes to the appended area (dnfw loader),
   DSP code into new boot-stream blocks (`dspblocks`); section 7 must stay under 1 MiB (the ColdFire's DSP loader refuses
   more: no DSP boot).
@@ -54,3 +66,17 @@ is ignored.
   chunks sit at 0x467c8000..0x467fffff -- if you combine with them, keep your code / RAM elsewhere (cfmod defaults to
   0x46800000).
 - elektronmods.com (community mods, mostly DN1 / DT1); Elekloader (irpina: cross-device loader with conflict detection).
+- Survey of GitHub, 2026-11-16 (read with `gh api repos/OWNER/REPO/contents/PATH`):
+  - **mischa85/elektron-firmware-tool** (C, MIT): inspect, byte-exact `-r` repack and a `-c` replace for ELE3 / ELE2 / ELEK /
+    AD / pre-ELE containers, plus the optimal-parse packer behind `scripts/optpack.c`.
+  - **naturarum/dn2-cfw** (Digiwerk, 1.12): the most detailed public DN2 notes: both main-OS loaders, the upgrade validator
+    (no build floor), free memory, Overbridge, SHARC code size, a 12-check pre-flash gate (`tools/brickcheck`), `sharcvm`.
+  - **ElekLabs/digikit** (formerly m-dwyer/digikit): now a runtime that loads machines and effects as modules from the +Drive,
+    so they need no reflash. `docs/FINDINGS.md`, `SHARC-ADDRESS-MAP.md`, `MIDI-SYSEX-RPC.md`.
+  - **armio/dn2-dt2-firmware-research**: Digitakt II sampler machines on the DN2, a sample filesystem in unused flash,
+    42-channel USB audio.
+  - **xerydian/elektron-emu**: VST3s that run the real OS. Its Unicorn 2.1.4 m68k patches fix EMAC MAC-with-load decoding
+    and saturation, enable ISA_C on cfv4e, and keep the TLB fast path when only a few pages carry memory hooks.
+  - **elekloader/telos** (mods kept on the unit, DN2 planned); DN2 1.12 patchers **terrain-dn2**, **nzimas/digirust**;
+    **Donmanouche/OpenBridge-Digitone-2** (Linux Overbridge); **ethernet8023/rytm-fw-re** (Analog Rytm MKII, the same ColdFire
+    family).
